@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Sections</title>
+
+<style>
+body {
+  margin: 0;
+  background: black;
+}
+
+/* MULTIPLE SECTIONS */
+.parallax-container {
+  width: 100%;
+  height: 100vh; /* full screen section */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Canvas fills section */
+.parallax-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<!-- SECTION 1 -->
+<div class="parallax-container">
+  <canvas class="parallax-canvas" data-folder="./layers"></canvas>
+</div>
+
+<!-- SECTION 2 (example reuse) -->
+<!--
+<div class="parallax-container">
+  <canvas class="parallax-canvas" data-folder="./layers2"></canvas>
+</div>
+-->
+
+<script>
+document.querySelectorAll(".parallax-canvas").forEach(setupParallax);
+
+function setupParallax(canvas) {
+  const ctx = canvas.getContext("2d");
+  const folder = canvas.dataset.folder;
+
+  let layers = [];
+  let mouseX = 0, mouseY = 0;
+
+  const LAYER_COUNT = 6;
+
+  // Resize per container
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+
+  // Load images
+  const promises = [];
+
+  for (let i = 0; i < LAYER_COUNT; i++) {
+    const img = new Image();
+    img.src = folder + "/layer_" + i + ".png";
+
+    promises.push(new Promise(res => {
+      img.onload = () => {
+        layers.push({ img, depth: i / LAYER_COUNT });
+        res();
+      };
+    }));
+  }
+
+  Promise.all(promises).then(() => {
+    requestAnimationFrame(render);
+  });
+
+  // Mouse tracking per canvas
+  canvas.addEventListener("mousemove", e => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = (e.clientX - rect.left) / rect.width - 0.5;
+    mouseY = (e.clientY - rect.top) / rect.height - 0.5;
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    mouseX = 0;
+    mouseY = 0;
+  });
+
+  // 🔥 COVER FUNCTION (THIS FIXES YOUR ISSUE)
+  function getCover(img) {
+    const imgAspect = img.width / img.height;
+    const canvasAspect = canvas.width / canvas.height;
+
+    let w, h;
+
+    if (imgAspect > canvasAspect) {
+      h = canvas.height;
+      w = h * imgAspect;
+    } else {
+      w = canvas.width;
+      h = w / imgAspect;
+    }
+
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
+
+    return { w, h, x, y };
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const strength = 60;
+
+    for (const layer of layers) {
+      const { img, depth } = layer;
+      const { w, h, x, y } = getCover(img);
+
+      const dx = mouseX * strength * (1 - depth);
+      const dy = mouseY * strength * (1 - depth);
+
+      ctx.drawImage(
+        img,
+        x + dx,
+        y + dy,
+        w,
+        h
+      );
+    }
+
+    requestAnimationFrame(render);
+  }
+}
+</script>
+
+</body>
+</html>
