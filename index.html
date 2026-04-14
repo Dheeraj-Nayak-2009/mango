@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scroll Parallax – Perfect Sticky Text | No Trailing Space</title>
+  <title>Mangifera Indica</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&display=swap');
 
@@ -316,7 +316,7 @@
 
       function getCover(img, canvas) {
         const imgAspect = img.width / img.height;
-        const canvasAspect = canvas.clientWidth / canvas.clientHeight;
+        const canvasAspect = canvas.width / canvas.height;
         let w, h;
         
         if (imgAspect > canvasAspect) {
@@ -360,23 +360,9 @@
           const layers = [];
 
           function resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-
-  // Set actual pixel buffer
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
-
-  // Set display size (VERY IMPORTANT)
-  canvas.style.width = width + "px";
-  canvas.style.height = height + "px";
-
-  // Reset transform before scaling
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-}
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+          }
           resizeCanvas();
           
           const resizeHandler = () => {
@@ -672,14 +658,6 @@
         console.log(`✨ Last scene text fades by 70% of its 180vh section → no trailing void`);
       }, 500);
     })();
-
-    window.addEventListener("load", () => {
-  setTimeout(() => {
-    scenes.forEach(scene => {
-      if (scene.resizeHandler) scene.resizeHandler();
-    });
-  }, 100);
-});
   </script>
 </body>
 </html>
