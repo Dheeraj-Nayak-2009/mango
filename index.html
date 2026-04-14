@@ -62,27 +62,10 @@
       will-change: transform;
     }
 
-    /* 
-      RESTORED ORIGINAL SECTION HEIGHT: 250vh each
-      Total scroll = 1000vh (4 scenes)
-      But we eliminate trailing space by making the LAST section shorter
-      so that when text fades out, scroll ends exactly there.
-    */
+    /* ALL sections equal height: 500vh each (doubled from 250vh) */
     .section {
       position: relative;
-    }
-    
-    /* First 3 scenes: original 250vh */
-    .section[data-scene="0"],
-    .section[data-scene="1"],
-    .section[data-scene="2"] {
-      height: 250vh;
-    }
-    
-    /* LAST SCENE: exactly enough scroll for text to fade out + minimal parallax tail */
-    /* No wasted space - text fades by 70%, then only 30% left, but we make section compact */
-    .section[data-scene="3"] {
-      height: 180vh;
+      height: 500vh;
     }
 
     /* Fixed text layer */
@@ -169,10 +152,6 @@
     html, body {
       overflow-x: hidden;
     }
-
-    .section[data-scene="4"] {
-  height: 1vh;
-}
   </style>
 </head>
 <body>
@@ -211,10 +190,6 @@
       <div class="overlay huge">YOU ARE THE MANGO</div>
       <div class="overlay sub">and you always will be</div>
     </div>
-    <div class="text-content" id="text-4">
-      <div class="overlay huge">MANGIFERA INDICA</div>
-      <div class="overlay sub">story of the mango</div>
-    </div>
   </div>
 
   <!-- Scrollable sections -->
@@ -223,7 +198,6 @@
     <section class="section" data-scene="1"></section>
     <section class="section" data-scene="2"></section>
     <section class="section" data-scene="3"></section>
-    <section class="section" data-scene="4"></section>
   </div>
 
   <script>
@@ -294,8 +268,7 @@
         0: document.getElementById('text-0'),
         1: document.getElementById('text-1'),
         2: document.getElementById('text-2'),
-        3: document.getElementById('text-3'),
-        4: document.getElementById('text-4') // NEW
+        3: document.getElementById('text-3')
       };
 
       const folders = [
@@ -473,10 +446,11 @@
           prevActiveScene = activeSceneIndex;
         }
         
-        // ----- TEXT VISIBILITY: Original timing but NO trailing space -----
-        // For scene 3, text fades out completely by 70% of its section scroll
-        // Then section ends at 100% with only 30% left for parallax tail
-        // But because last section height is 180vh (not 250vh), total trailing space is eliminated
+        // ----- TEXT VISIBILITY WITH STICKY MIDDLE PERIOD -----
+        // Each section is 500vh with timing:
+        // 0-25%: Fade in + parallax movement
+        // 25-75%: STICKY (image and text stay fixed at center)
+        // 75-100%: Fade out + transition to next
         sections.forEach((section, idx) => {
           const rect = section.getBoundingClientRect();
           const sectionTop = rect.top + viewportTop;
@@ -493,58 +467,29 @@
           
           let opacity = 0;
           
-          if (idx === 3) {
-            // LAST SCENE: tighter fade out to end exactly before scroll finishes
-            // Fade in: 0% to 12%
-            // Sticky: 12% to 55%
-            // Fade out: 55% to 70% -> completely gone by 70%
-            // Then 30% of section with parallax only, but section is 180vh so total scroll ends naturally
-            const fadeInEnd = 0.12;
-            const stickyEnd = 0.55;
-            const fadeOutEnd = 0.70;
-            
-            if (sectionProgress < fadeInEnd) {
-              const t = sectionProgress / fadeInEnd;
-              opacity = Math.min(1, t);
-            } else if (sectionProgress < stickyEnd) {
-              opacity = 1;
-            } else if (sectionProgress < fadeOutEnd) {
-              const t = (sectionProgress - stickyEnd) / (fadeOutEnd - stickyEnd);
-              opacity = 1 - t;
-            } else {
-              opacity = 0;
-            }
-          }
-          if (idx === 4) {
-  // FINAL SCENE — fade in only at the very end
-  const fadeInStart = 0.2;
-  const fadeInEnd = 0.5;
-
-  if (sectionProgress < fadeInStart) {
-    opacity = 0;
-  } else if (sectionProgress < fadeInEnd) {
-    const t = (sectionProgress - fadeInStart) / (fadeInEnd - fadeInStart);
-    opacity = t;
-  } else {
-    opacity = 1;
-  }
-} else {
-            // FIRST 3 SCENES: original smooth timing with 250vh each
-            const fadeInEnd = 0.15;
-            const stickyEnd = 0.65;
-            const fadeOutEnd = 0.85;
-            
-            if (sectionProgress < fadeInEnd) {
-              const t = sectionProgress / fadeInEnd;
-              opacity = Math.min(1, t);
-            } else if (sectionProgress < stickyEnd) {
-              opacity = 1;
-            } else if (sectionProgress < fadeOutEnd) {
-              const t = (sectionProgress - stickyEnd) / (fadeOutEnd - stickyEnd);
-              opacity = 1 - t;
-            } else {
-              opacity = 0;
-            }
+          // New timing for all scenes with sticky middle
+          const fadeInEnd = 0.15;      // Fade in completes at 15%
+          const stickyStart = 0.25;    // Sticky period starts at 25%
+          const stickyEnd = 0.75;      // Sticky period ends at 75%
+          const fadeOutEnd = 0.90;     // Fade out completes at 90%
+          
+          if (sectionProgress < fadeInEnd) {
+            // Fade in phase
+            const t = sectionProgress / fadeInEnd;
+            opacity = Math.min(1, t);
+          } else if (sectionProgress < stickyStart) {
+            // Transition to sticky
+            opacity = 1;
+          } else if (sectionProgress < stickyEnd) {
+            // STICKY PERIOD - stay at full opacity
+            opacity = 1;
+          } else if (sectionProgress < fadeOutEnd) {
+            // Fade out phase
+            const t = (sectionProgress - stickyEnd) / (fadeOutEnd - stickyEnd);
+            opacity = 1 - t;
+          } else {
+            // Fully faded out
+            opacity = 0;
           }
           
           textEl.style.opacity = opacity;
@@ -557,7 +502,7 @@
           textEl.style.transform = 'translate(-50%, -50%)';
         });
         
-        // ----- RENDER PARALLAX -----
+        // ----- RENDER PARALLAX WITH STICKY MIDDLE -----
         scenes.forEach((scene, idx) => {
           const { ctx, canvas, layers } = scene;
           if (!ctx || !canvas) return;
@@ -574,7 +519,24 @@
           let progress = (viewportTop - sectionTop) / sectionHeight;
           progress = Math.min(Math.max(progress, 0), 1);
           
-          const delta = progress - scene.smoothProgress;
+          // Map progress to parallax movement with sticky middle
+          // 0-25%: parallax moves from start (1.0) to center (0.5)
+          // 25-75%: STICKY at center (0.5)
+          // 75-100%: parallax moves from center (0.5) to end (0.0)
+          let parallaxProgress = progress;
+          
+          if (progress <= 0.25) {
+            // First quarter: move from 1.0 to 0.5
+            parallaxProgress = 1.0 - (progress / 0.25) * 0.5;
+          } else if (progress <= 0.75) {
+            // Middle half: STICKY at 0.5
+            parallaxProgress = 0.5;
+          } else {
+            // Last quarter: move from 0.5 to 0.0
+            parallaxProgress = 0.5 - ((progress - 0.75) / 0.25) * 0.5;
+          }
+          
+          const delta = parallaxProgress - scene.smoothProgress;
           const dynamicEase = 0.06;
           scene.smoothProgress += delta * dynamicEase;
           const smooth = Math.min(Math.max(scene.smoothProgress, 0), 1);
@@ -653,9 +615,10 @@
       
       // Log for verification
       setTimeout(() => {
-        console.log(`✅ Sections: scene0=250vh, scene1=250vh, scene2=250vh, scene3=180vh`);
+        console.log(`✅ All sections: 500vh each (doubled from original 250vh)`);
+        console.log(`🎯 Timing: 0-25% parallax in → 25-75% STICKY → 75-100% parallax out`);
         console.log(`📐 Total scroll height: ${document.body.scrollHeight}px`);
-        console.log(`✨ Last scene text fades by 70% of its 180vh section → no trailing void`);
+        console.log(`✨ No trailing space - page ends after scene 3`);
       }, 500);
     })();
   </script>
