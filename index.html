@@ -622,5 +622,61 @@
       }, 500);
     })();
   </script>
+  <script>
+  (function() {
+    // Disable scroll beyond 50% of total scroll height
+    function limitScrollToFirstHalf() {
+      const totalScrollHeight = document.body.scrollHeight - window.innerHeight;
+      const maxScroll = totalScrollHeight * 0.5; // First half only
+      
+      if (window.scrollY > maxScroll) {
+        window.scrollTo(0, maxScroll);
+        return true;
+      }
+      return false;
+    }
+    
+    // Override scroll position continuously
+    let scrollBlocked = false;
+    
+    window.addEventListener('scroll', function() {
+      const totalHeight = document.body.scrollHeight - window.innerHeight;
+      const halfLimit = totalHeight * 0.5;
+      
+      if (window.scrollY > halfLimit) {
+        window.scrollTo(0, halfLimit);
+        scrollBlocked = true;
+      } else {
+        scrollBlocked = false;
+      }
+    });
+    
+    // Also prevent wheel/gesture from pushing beyond limit
+    window.addEventListener('wheel', function(e) {
+      const totalHeight = document.body.scrollHeight - window.innerHeight;
+      const halfLimit = totalHeight * 0.5;
+      const currentScroll = window.scrollY;
+      const delta = e.deltaY;
+      
+      if (currentScroll >= halfLimit && delta > 0) {
+        e.preventDefault();
+        return false;
+      }
+    }, { passive: false });
+    
+    // Touch events for mobile
+    window.addEventListener('touchmove', function(e) {
+      const totalHeight = document.body.scrollHeight - window.innerHeight;
+      const halfLimit = totalHeight * 0.5;
+      
+      if (window.scrollY >= halfLimit) {
+        e.preventDefault();
+        return false;
+      }
+    }, { passive: false });
+    
+    console.log('✅ Scroll limited to first half of page only');
+  })();
+</script>
 </body>
 </html>
