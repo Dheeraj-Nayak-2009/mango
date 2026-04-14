@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mangifera Indica</title>
+  <title>Mangifera</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&display=swap');
 
@@ -378,24 +378,15 @@
             img.src = layerPath;
 
             promises.push(new Promise((res) => {
-              img.onload = () => {
-  layers.push({ img, depth: j / LAYER_COUNT });
-  imagesLoaded++;
-  if (imagesLoaded === totalImages) {
-    loadingEl.classList.remove('show');
-  }
-  res();
-};
-
-img.onerror = () => {
-  const fallbackImg = createFallbackLayer(i, j);
-  layers.push({ img: fallbackImg, depth: j / LAYER_COUNT });
-  imagesLoaded++;
-  if (imagesLoaded === totalImages) {
-    loadingEl.classList.remove('show');
-  }
-  res();
-};
+              const timeout = setTimeout(() => {
+                const fallbackImg = createFallbackLayer(i, j);
+                layers.push({ img: fallbackImg, depth: j / LAYER_COUNT });
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                  loadingEl.classList.remove('show');
+                }
+                res();
+              }, 2000);
               
               img.onload = () => {
                 clearTimeout(timeout);
@@ -419,10 +410,7 @@ img.onerror = () => {
             }));
           }
 
-          if (imagesLoaded === totalImages) {
-  loadingEl.classList.remove('show');
-  requestAnimationFrame(render);
-}
+          await Promise.all(promises);
           layers.sort((a, b) => a.depth - b.depth);
 
           scenes.push({
