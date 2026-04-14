@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mangifera</title>
+  <title>MANGIFERA</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&display=swap');
 
@@ -11,13 +11,6 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-    }
-
-    #canvas-stage,
-    #text-layer,
-    #scroll-container {
-      opacity: 0;
-      transition: opacity 0.8s ease;
     }
 
     body {
@@ -358,13 +351,6 @@
         return img;
       }
 
-      function showApp() {
-        // Makes everything back visible
-        document.getElementById("canvas-stage").style.opacity = "1";
-        document.getElementById("text-layer").style.opacity = "1";
-        document.getElementById("scroll-container").style.opacity = "1";
-      }
-
       async function loadAllScenes() {
         for (let i = 0; i < folders.length; i++) {
           const canvas = canvases[i];
@@ -400,7 +386,7 @@
                   loadingEl.classList.remove('show');
                 }
                 res();
-              }, 2000);
+              }, 25000);
               
               img.onload = () => {
                 clearTimeout(timeout);
@@ -437,9 +423,6 @@
         }
 
         if (canvasLayers[0]) canvasLayers[0].classList.add('active');
-
-        loadingEl.classList.remove('show');
-        showApp();
         requestAnimationFrame(render);
       }
 
