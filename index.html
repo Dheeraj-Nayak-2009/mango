@@ -438,12 +438,9 @@
 
         if (canvasLayers[0]) canvasLayers[0].classList.add('active');
 
-        // FORCE 7secs DELAY 
-        setTimeout(() => {
-          loadingEl.classList.remove('show');
-          showApp();
-          requestAnimationFrame(render);
-        }, 7000)
+        loadingEl.classList.remove('show');
+        showApp();
+        requestAnimationFrame(render);
       }
 
       let prevActiveScene = 0;
