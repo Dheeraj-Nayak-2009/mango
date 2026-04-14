@@ -316,7 +316,7 @@
 
       function getCover(img, canvas) {
         const imgAspect = img.width / img.height;
-        const canvasAspect = canvas.width / canvas.height;
+        const canvasAspect = canvas.clientWidth / canvas.clientHeight;
         let w, h;
         
         if (imgAspect > canvasAspect) {
@@ -365,13 +365,17 @@
   const width = window.innerWidth;
   const height = window.innerHeight;
 
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
+  // Set actual pixel buffer
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
 
+  // Set display size (VERY IMPORTANT)
   canvas.style.width = width + "px";
   canvas.style.height = height + "px";
 
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Reset transform before scaling
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
 }
           resizeCanvas();
           
@@ -668,6 +672,14 @@
         console.log(`✨ Last scene text fades by 70% of its 180vh section → no trailing void`);
       }, 500);
     })();
+
+    window.addEventListener("load", () => {
+  setTimeout(() => {
+    scenes.forEach(scene => {
+      if (scene.resizeHandler) scene.resizeHandler();
+    });
+  }, 100);
+});
   </script>
 </body>
 </html>
