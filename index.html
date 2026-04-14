@@ -13,6 +13,13 @@
       box-sizing: border-box;
     }
 
+    #canvas-stage,
+    #text-layer,
+    #scroll-container {
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+
     body {
       background: black;
       overflow-x: hidden;
@@ -351,6 +358,13 @@
         return img;
       }
 
+      function showApp() {
+        // Makes everything back visible
+        document.getElementById("canvas-stage").style.opacity = "1";
+        document.getElementById("text-layer").style.opacity = "1";
+        document.getElementById("scroll-container").style.opacity = "1";
+      }
+
       async function loadAllScenes() {
         for (let i = 0; i < folders.length; i++) {
           const canvas = canvases[i];
@@ -423,7 +437,13 @@
         }
 
         if (canvasLayers[0]) canvasLayers[0].classList.add('active');
-        requestAnimationFrame(render);
+
+        // FORCE 7secs DELAY 
+        setTimeout(() => {
+          loadingEl.classList.remove('show');
+          showApp();
+          requestAnimationFrame(render);
+        }, 7000)
       }
 
       let prevActiveScene = 0;
