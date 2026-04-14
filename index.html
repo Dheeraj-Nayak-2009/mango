@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mangifera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MANGIFERA — Immersive Scroll</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Special+Gothic+Condensed+One&display=swap');
 
@@ -13,20 +13,14 @@
       box-sizing: border-box;
     }
 
-    #canvas-stage,
-    #text-layer,
-    #scroll-container {
-      opacity: 0;
-      transition: opacity 0.8s ease;
-    }
-
     body {
-      background: black;
+      background: #000000;
       overflow-x: hidden;
-      font-family: 'Special Gothic Condensed One', serif;
+      font-family: 'Special Gothic Condensed One', 'Impact', sans-serif;
+      /* height will be set dynamically by JS */
     }
 
-    /* Fixed canvas layer */
+    /* Fixed canvas backdrop (z-index behind text) */
     #canvas-stage {
       position: fixed;
       top: 0;
@@ -44,55 +38,40 @@
       width: 100%;
       height: 100%;
       opacity: 0;
-      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.9s cubic-bezier(0.23, 1, 0.32, 1);
       pointer-events: none;
     }
 
     .canvas-layer.active {
       opacity: 1;
+      z-index: 2;
     }
 
     canvas {
       display: block;
       width: 100%;
       height: 100%;
+      object-fit: cover;
     }
 
     .canvas-layer canvas {
-      filter: brightness(0.5);
+      filter: brightness(0.52) contrast(1.05);
     }
 
-    /* Scroll container */
+    /* Scroll container — will be transformed smoothly */
     #scroll-container {
       position: relative;
       z-index: 2;
       will-change: transform;
     }
 
-    /* 
-      RESTORED ORIGINAL SECTION HEIGHT: 250vh each
-      Total scroll = 1000vh (4 scenes)
-      But we eliminate trailing space by making the LAST section shorter
-      so that when text fades out, scroll ends exactly there.
-    */
+    /* Each section: height equals viewport height * multiplier (5 = 500vh) */
     .section {
       position: relative;
-    }
-    
-    /* First 3 scenes: original 250vh */
-    .section[data-scene="0"],
-    .section[data-scene="1"],
-    .section[data-scene="2"] {
-      height: 250vh;
-    }
-    
-    /* LAST SCENE: exactly enough scroll for text to fade out + minimal parallax tail */
-    /* No wasted space - text fades by 70%, then only 30% left, but we make section compact */
-    .section[data-scene="3"] {
-      height: 180vh;
+      height: 500vh;   /* 5 full viewports per scene -> smooth parallax range */
     }
 
-    /* Fixed text layer */
+    /* Fixed text layer — always centered */
     #text-layer {
       position: fixed;
       top: 0;
@@ -100,7 +79,10 @@
       width: 100%;
       height: 100vh;
       pointer-events: none;
-      z-index: 10;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .text-content {
@@ -108,14 +90,13 @@
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: 100%;
+      width: 90%;
+      max-width: 1100px;
       text-align: center;
       color: white;
-      text-shadow: 0 0 40px rgba(0,0,0,0.95), 
-                   0 0 80px rgba(0,0,0,0.8),
-                   0 4px 20px rgba(0,0,0,0.5);
+      text-shadow: 0 0 35px rgba(0,0,0,0.95), 0 0 70px rgba(0,0,0,0.7), 0 5px 25px rgba(0,0,0,0.6);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.25s ease-out;
       pointer-events: none;
       will-change: opacity;
     }
@@ -125,68 +106,70 @@
     }
 
     .overlay {
-      font-size: 2.5rem;
+      font-size: 2.4rem;
       font-weight: bold;
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       margin: 0;
-      padding: 0 20px;
+      padding: 0 16px;
+      line-height: 1.3;
     }
 
     .overlay.big {
-      font-size: 6rem;
-      margin-bottom: 0.5rem;
+      font-size: 5.8rem;
+      margin-bottom: 0.6rem;
       letter-spacing: 12px;
-      line-height: 1.2;
     }
 
     .overlay.huge {
-      font-size: 4rem;
-      letter-spacing: 6px;
-      line-height: 1.3;
+      font-size: 4.2rem;
+      letter-spacing: 8px;
     }
 
     .overlay.sub {
       font-size: 2rem;
       margin-top: 1rem;
-      opacity: 0.9;
-      letter-spacing: 4px;
+      opacity: 0.92;
+      letter-spacing: 5px;
     }
 
     .loading {
       position: fixed;
-      top: 50%;
+      bottom: 30px;
       left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      z-index: 999;
-      font-size: 1.5rem;
-      opacity: 0;
-      transition: opacity 0.5s;
-      pointer-events: none;
-      background: rgba(0,0,0,0.7);
-      padding: 1rem 2rem;
-      border-radius: 40px;
+      transform: translateX(-50%);
+      color: #ffd966;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      padding: 10px 24px;
+      border-radius: 60px;
       font-family: monospace;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+      white-space: nowrap;
     }
 
     .loading.show {
       opacity: 1;
     }
 
-    html, body {
-      overflow-x: hidden;
+    /* responsive text */
+    @media (max-width: 768px) {
+      .overlay { font-size: 1.5rem; letter-spacing: 2px; }
+      .overlay.big { font-size: 3.2rem; letter-spacing: 6px; }
+      .overlay.huge { font-size: 2.5rem; letter-spacing: 4px; }
+      .overlay.sub { font-size: 1.3rem; }
     }
-
-    .section[data-scene="4"] {
-  height: 1vh;
-}
   </style>
 </head>
 <body>
 
-  <div class="loading" id="loading">Loading immersive layers...</div>
+  <div class="loading" id="loading">⚡ loading immersive layers ...</div>
 
-  <!-- Fixed canvas stage -->
+  <!-- Fixed canvas stage: 4 scenes -->
   <div id="canvas-stage">
     <div class="canvas-layer" data-scene="0">
       <canvas id="canvas-0"></canvas>
@@ -202,7 +185,7 @@
     </div>
   </div>
 
-  <!-- Fixed text layer -->
+  <!-- Fixed text overlays -->
   <div id="text-layer">
     <div class="text-content" id="text-0">
       <div class="overlay">Some memories never fade...</div>
@@ -218,76 +201,81 @@
       <div class="overlay huge">YOU ARE THE MANGO</div>
       <div class="overlay sub">and you always will be</div>
     </div>
-    <div class="text-content" id="text-4">
-      <div class="overlay huge">MANGIFERA INDICA</div>
-      <div class="overlay sub">story of the mango</div>
-    </div>
   </div>
 
-  <!-- Scrollable sections -->
+  <!-- Scrollable sections: exactly 4 sections each 500vh (total 2000vh = 20 viewports) -->
   <div id="scroll-container">
     <section class="section" data-scene="0"></section>
     <section class="section" data-scene="1"></section>
     <section class="section" data-scene="2"></section>
     <section class="section" data-scene="3"></section>
-    <section class="section" data-scene="4"></section>
   </div>
 
   <script>
     (function() {
-      // ----- SMOOTH SCROLL ENGINE -----
-      let current = 0;
-      let target = 0;
-      const ease = 0.075;
+      // ========== SMOOTH SCROLL ENGINE (NO DEAD ZONE) ==========
+      let currentScroll = 0;
+      let targetScroll = 0;
+      const easeFactor = 0.085;
       const container = document.getElementById("scroll-container");
       const loadingEl = document.getElementById("loading");
       
-      // CRITICAL: Body height exactly equals container's scroll height
-      function setBodyHeight() {
-        if (container) {
-          const containerHeight = container.scrollHeight;
-          document.body.style.height = containerHeight + "px";
-          document.body.style.margin = "0";
-          document.body.style.padding = "0";
-        }
+      // Critical: body height must exactly match container scrollHeight + avoid trailing gaps
+      function updateBodyHeight() {
+        if (!container) return;
+        const totalScrollHeight = container.scrollHeight;
+        document.body.style.height = totalScrollHeight + "px";
+        document.body.style.margin = "0";
+        document.body.style.padding = "0";
+        document.body.style.overflowX = "hidden";
+        // ensure no extra bottom padding
+        document.documentElement.style.height = "auto";
       }
       
-      setBodyHeight();
+      updateBodyHeight();
       
+      // adjust on resize or orientation change
       window.addEventListener("resize", () => {
-        setTimeout(setBodyHeight, 30);
+        setTimeout(() => {
+          updateBodyHeight();
+          const maxY = Math.max(0, document.body.scrollHeight - window.innerHeight);
+          if (targetScroll > maxY) targetScroll = maxY;
+          if (currentScroll > maxY) currentScroll = maxY;
+          window.scrollTo(0, targetScroll);
+        }, 40);
       });
       
       window.addEventListener("load", () => {
-        setBodyHeight();
-        const maxScroll = document.body.scrollHeight - window.innerHeight;
-        target = Math.min(window.scrollY, maxScroll);
-        current = Math.min(current, maxScroll);
+        updateBodyHeight();
+        const maxAllowed = document.body.scrollHeight - window.innerHeight;
+        targetScroll = Math.min(window.scrollY, maxAllowed);
+        currentScroll = targetScroll;
+        window.scrollTo(0, targetScroll);
+        // tiny delay to ensure consistency
+        setTimeout(() => updateBodyHeight(), 60);
       });
-
+      
       window.addEventListener("scroll", () => {
-        target = window.scrollY;
-        const maxScroll = document.body.scrollHeight - window.innerHeight;
-        if (target > maxScroll) target = maxScroll;
-        if (target < 0) target = 0;
+        let rawScroll = window.scrollY;
+        const maxLimit = document.body.scrollHeight - window.innerHeight;
+        targetScroll = Math.min(Math.max(rawScroll, 0), maxLimit);
       });
-
-      function smoothScroll() {
-        const maxScroll = document.body.scrollHeight - window.innerHeight;
-        let clampedTarget = Math.min(Math.max(target, 0), maxScroll);
-        
-        current += (clampedTarget - current) * ease;
-        
-        if (Math.abs(clampedTarget - current) < 0.1) {
-          current = clampedTarget;
+      
+      function smoothScrollLoop() {
+        const maxBound = document.body.scrollHeight - window.innerHeight;
+        let clampedTarget = Math.min(Math.max(targetScroll, 0), maxBound);
+        currentScroll += (clampedTarget - currentScroll) * easeFactor;
+        if (Math.abs(clampedTarget - currentScroll) < 0.05) {
+          currentScroll = clampedTarget;
         }
-        
-        container.style.transform = `translateY(${-current}px)`;
-        requestAnimationFrame(smoothScroll);
+        if (container) {
+          container.style.transform = `translateY(${-currentScroll}px)`;
+        }
+        requestAnimationFrame(smoothScrollLoop);
       }
-      smoothScroll();
-
-      // ----- CANVAS PARALLAX SETUP -----
+      smoothScrollLoop();
+      
+      // ========== SCENE & PARALLAX MANAGEMENT ==========
       const sections = document.querySelectorAll('.section');
       const canvasLayers = document.querySelectorAll('.canvas-layer');
       const canvases = {
@@ -296,384 +284,375 @@
         2: document.getElementById('canvas-2'),
         3: document.getElementById('canvas-3')
       };
-      
-      const textContents = {
+      const textElements = {
         0: document.getElementById('text-0'),
         1: document.getElementById('text-1'),
         2: document.getElementById('text-2'),
-        3: document.getElementById('text-3'),
-        4: document.getElementById('text-4') // NEW
+        3: document.getElementById('text-3')
       };
-
+      
+      // asset folders: scene_1/layers, scene_2/layers, scene_3/layers, scene_4/layers
       const folders = [
         './scene_1/layers',
         './scene_2/layers',
         './scene_3/layers',
         './scene_4/layers'
       ];
-      const LAYER_COUNT = 6;
+      const LAYER_COUNT = 6;   // each scene has 6 parallax layers (layer_0.png ... layer_5.png)
       
-      const scenes = [];
-      let imagesLoaded = 0;
-      const totalImages = folders.length * LAYER_COUNT;
-
-      if (totalImages > 0) {
-        loadingEl.classList.add('show');
-      }
-
-      function getCover(img, canvas) {
-        const imgAspect = img.width / img.height;
-        const canvasAspect = canvas.width / canvas.height;
-        let w, h;
-        
+      let scenesData = [];      // stores ctx, canvas, layers array, smoothProgress, resizeHandler
+      let totalImages = folders.length * LAYER_COUNT;
+      let loadedCount = 0;
+      
+      if (totalImages > 0) loadingEl.classList.add('show');
+      
+      // Helper: cover scaling for any canvas size
+      function getCoverFit(img, canvasWidth, canvasHeight) {
+        const imgW = img.width;
+        const imgH = img.height;
+        const imgAspect = imgW / imgH;
+        const canvasAspect = canvasWidth / canvasHeight;
+        let drawW, drawH;
         if (imgAspect > canvasAspect) {
-          h = canvas.height;
-          w = h * imgAspect;
+          drawH = canvasHeight;
+          drawW = drawH * imgAspect;
         } else {
-          w = canvas.width;
-          h = w / imgAspect;
+          drawW = canvasWidth;
+          drawH = drawW / imgAspect;
         }
-        
-        const x = (canvas.width - w) / 2;
-        const y = (canvas.height - h) / 2;
-        return { w, h, x, y };
+        const offsetX = (canvasWidth - drawW) / 2;
+        const offsetY = (canvasHeight - drawH) / 2;
+        return { w: drawW, h: drawH, x: offsetX, y: offsetY };
       }
-
-      function createFallbackLayer(sceneIdx, layerIdx) {
+      
+      // fallback procedural texture (avoid missing assets)
+      function createProceduralLayer(sceneIdx, layerIdx) {
         const canvas = document.createElement('canvas');
-        canvas.width = 1920;
-        canvas.height = 1080;
+        canvas.width = 2048;
+        canvas.height = 2048;
         const ctx = canvas.getContext('2d');
-        const hue = (sceneIdx * 90 + layerIdx * 15) % 360;
-        const lightness = 25 + layerIdx * 8;
-        ctx.fillStyle = `hsl(${hue}, 65%, ${lightness}%)`;
+        const hue = (sceneIdx * 60 + layerIdx * 22) % 360;
+        const baseLight = 28 + layerIdx * 6;
+        ctx.fillStyle = `hsl(${hue}, 70%, ${baseLight}%)`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = 0.15;
-        for (let i = 0; i < 50; i++) {
-          ctx.fillStyle = `hsl(${hue + 30}, 80%, 70%)`;
-          ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 4, 4);
+        // organic grain / mango-like texture
+        ctx.globalCompositeOperation = 'overlay';
+        for (let i = 0; i < 180; i++) {
+          ctx.fillStyle = `hsl(${hue + 20}, 85%, 65%)`;
+          ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 6, 6);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = `hsl(${hue + 10}, 70%, 50%)`;
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 60; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 12 + 2, 0, Math.PI * 2);
+          ctx.stroke();
         }
         const img = new Image();
         img.src = canvas.toDataURL();
         return img;
       }
-
-      function showApp() {
-        // Makes everything back visible
-        document.getElementById("canvas-stage").style.opacity = "1";
-        document.getElementById("text-layer").style.opacity = "1";
-        document.getElementById("scroll-container").style.opacity = "1";
-      }
-
+      
+      // preload all layers per scene
       async function loadAllScenes() {
-        for (let i = 0; i < folders.length; i++) {
-          const canvas = canvases[i];
-          if (!canvas) continue;
+        for (let sceneIndex = 0; sceneIndex < folders.length; sceneIndex++) {
+          const canvasElem = canvases[sceneIndex];
+          if (!canvasElem) continue;
           
-          const ctx = canvas.getContext('2d');
-          const layers = [];
-
-          function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+          const ctx = canvasElem.getContext('2d');
+          let layerImages = [];
+          
+          // resize handler for responsive canvas
+          function resizeCanvasElem() {
+            canvasElem.width = window.innerWidth;
+            canvasElem.height = window.innerHeight;
           }
-          resizeCanvas();
-          
-          const resizeHandler = () => {
-            resizeCanvas();
+          resizeCanvasElem();
+          const resizeObserverHandler = () => {
+            resizeCanvasElem();
           };
-          window.addEventListener('resize', resizeHandler);
-
-          const promises = [];
+          window.addEventListener('resize', resizeObserverHandler);
           
-          for (let j = 0; j < LAYER_COUNT; j++) {
+          // load 6 layers for this scene
+          const loadPromises = [];
+          for (let l = 0; l < LAYER_COUNT; l++) {
             const img = new Image();
-            const layerPath = `${folders[i]}/layer_${j}.png`;
+            const layerPath = `${folders[sceneIndex]}/layer_${l}.png`;
             img.src = layerPath;
-
-            promises.push(new Promise((res) => {
-              const timeout = setTimeout(() => {
-                const fallbackImg = createFallbackLayer(i, j);
-                layers.push({ img: fallbackImg, depth: j / LAYER_COUNT });
-                imagesLoaded++;
-                if (imagesLoaded === totalImages) {
-                  loadingEl.classList.remove('show');
-                }
-                res();
-              }, 2000);
+            
+            loadPromises.push(new Promise((resolve) => {
+              const timeoutId = setTimeout(() => {
+                // fallback if 25 seconds timeout
+                const fallbackImg = createProceduralLayer(sceneIndex, l);
+                layerImages.push({ img: fallbackImg, depth: l / LAYER_COUNT, originalIdx: l });
+                loadedCount++;
+                if (loadedCount === totalImages) loadingEl.classList.remove('show');
+                resolve();
+              }, 20000);
               
               img.onload = () => {
-                clearTimeout(timeout);
-                layers.push({ img, depth: j / LAYER_COUNT });
-                imagesLoaded++;
-                if (imagesLoaded === totalImages) {
-                  loadingEl.classList.remove('show');
-                }
-                res();
+                clearTimeout(timeoutId);
+                layerImages.push({ img, depth: l / LAYER_COUNT, originalIdx: l });
+                loadedCount++;
+                if (loadedCount === totalImages) loadingEl.classList.remove('show');
+                resolve();
               };
               img.onerror = () => {
-                clearTimeout(timeout);
-                const fallbackImg = createFallbackLayer(i, j);
-                layers.push({ img: fallbackImg, depth: j / LAYER_COUNT });
-                imagesLoaded++;
-                if (imagesLoaded === totalImages) {
-                  loadingEl.classList.remove('show');
-                }
-                res();
+                clearTimeout(timeoutId);
+                const fallbackImg = createProceduralLayer(sceneIndex, l);
+                layerImages.push({ img: fallbackImg, depth: l / LAYER_COUNT, originalIdx: l });
+                loadedCount++;
+                if (loadedCount === totalImages) loadingEl.classList.remove('show');
+                resolve();
               };
             }));
           }
-
-          await Promise.all(promises);
-          layers.sort((a, b) => a.depth - b.depth);
-
-          scenes.push({
+          await Promise.all(loadPromises);
+          // sort by depth (background first)
+          layerImages.sort((a, b) => a.depth - b.depth);
+          
+          scenesData.push({
             ctx,
-            canvas,
-            layers,
-            smoothProgress: 0,
-            resizeHandler,
+            canvas: canvasElem,
+            layers: layerImages,
+            smoothProgress: 0.5,   // start mid
+            resizeHandler: resizeObserverHandler,
           });
         }
-
+        
+        // activate first scene by default
         if (canvasLayers[0]) canvasLayers[0].classList.add('active');
-
-        loadingEl.classList.remove('show');
-        showApp();
-        requestAnimationFrame(render);
+        requestAnimationFrame(renderParallax);
       }
-
-      let prevActiveScene = 0;
       
-      function render() {
-        let activeSceneIndex = 0;
-        const viewportTop = current;
-        const viewportMiddle = viewportTop + window.innerHeight / 2;
-        
-        let found = false;
-        sections.forEach((section, idx) => {
-          const rect = section.getBoundingClientRect();
-          const sectionTop = rect.top + viewportTop;
-          const sectionBottom = sectionTop + rect.height;
-
-          if (viewportMiddle >= sectionTop && viewportMiddle < sectionBottom) {
-            activeSceneIndex = idx;
-            found = true;
-          }
-        });
-
-        if (!found && sections.length > 0) {
-          const lastSection = sections[sections.length - 1];
-          const lastRect = lastSection.getBoundingClientRect();
-          const lastTop = lastRect.top + viewportTop;
-          if (viewportTop >= lastTop + lastRect.height - window.innerHeight) {
-            activeSceneIndex = sections.length - 1;
-          } else {
-            activeSceneIndex = 0;
+      let activeSceneIndex = 0;
+      
+      // update active scene based on scroll position (center of viewport)
+      function getActiveSceneFromScroll() {
+        const viewportMid = currentScroll + window.innerHeight / 2;
+        let bestIdx = 0;
+        for (let i = 0; i < sections.length; i++) {
+          const section = sections[i];
+          const sectionTop = section.offsetTop;
+          const sectionBottom = sectionTop + section.clientHeight;
+          if (viewportMid >= sectionTop && viewportMid < sectionBottom) {
+            bestIdx = i;
+            break;
           }
         }
-        
-        if (activeSceneIndex !== prevActiveScene) {
-          canvasLayers.forEach((layer, idx) => {
-            if (idx === activeSceneIndex) {
-              layer.style.opacity = '1';
-              layer.classList.add('active');
-            } else if (idx === prevActiveScene) {
-              layer.style.opacity = '0';
-              setTimeout(() => {
-                if (layer.classList.contains('active')) {
-                  layer.classList.remove('active');
-                }
-              }, 800);
-            }
-          });
-          prevActiveScene = activeSceneIndex;
+        // edge case if at very bottom
+        if (bestIdx === sections.length - 1 && viewportMid > sections[sections.length-1].offsetTop + sections[sections.length-1].clientHeight) {
+          bestIdx = sections.length - 1;
         }
-        
-        // ----- TEXT VISIBILITY: Original timing but NO trailing space -----
-        // For scene 3, text fades out completely by 70% of its section scroll
-        // Then section ends at 100% with only 30% left for parallax tail
-        // But because last section height is 180vh (not 250vh), total trailing space is eliminated
-        sections.forEach((section, idx) => {
-          const rect = section.getBoundingClientRect();
-          const sectionTop = rect.top + viewportTop;
-          const sectionHeight = rect.height;
-          
-          let sectionProgress = 0;
-          if (sectionHeight > 0) {
-            sectionProgress = (viewportTop - sectionTop) / sectionHeight;
-            sectionProgress = Math.min(Math.max(sectionProgress, 0), 1);
-          }
-          
-          const textEl = textContents[idx];
-          if (!textEl) return;
-          
-          let opacity = 0;
-          
-          if (idx === 3) {
-            // LAST SCENE: tighter fade out to end exactly before scroll finishes
-            // Fade in: 0% to 12%
-            // Sticky: 12% to 55%
-            // Fade out: 55% to 70% -> completely gone by 70%
-            // Then 30% of section with parallax only, but section is 180vh so total scroll ends naturally
-            const fadeInEnd = 0.12;
-            const stickyEnd = 0.55;
-            const fadeOutEnd = 0.70;
-            
-            if (sectionProgress < fadeInEnd) {
-              const t = sectionProgress / fadeInEnd;
-              opacity = Math.min(1, t);
-            } else if (sectionProgress < stickyEnd) {
-              opacity = 1;
-            } else if (sectionProgress < fadeOutEnd) {
-              const t = (sectionProgress - stickyEnd) / (fadeOutEnd - stickyEnd);
-              opacity = 1 - t;
-            } else {
-              opacity = 0;
-            }
-          }
-          if (idx === 4) {
-  // FINAL SCENE — fade in only at the very end
-  const fadeInStart = 0.2;
-  const fadeInEnd = 0.5;
-
-  if (sectionProgress < fadeInStart) {
-    opacity = 0;
-  } else if (sectionProgress < fadeInEnd) {
-    const t = (sectionProgress - fadeInStart) / (fadeInEnd - fadeInStart);
-    opacity = t;
-  } else {
-    opacity = 1;
-  }
-} else {
-            // FIRST 3 SCENES: original smooth timing with 250vh each
-            const fadeInEnd = 0.15;
-            const stickyEnd = 0.65;
-            const fadeOutEnd = 0.85;
-            
-            if (sectionProgress < fadeInEnd) {
-              const t = sectionProgress / fadeInEnd;
-              opacity = Math.min(1, t);
-            } else if (sectionProgress < stickyEnd) {
-              opacity = 1;
-            } else if (sectionProgress < fadeOutEnd) {
-              const t = (sectionProgress - stickyEnd) / (fadeOutEnd - stickyEnd);
-              opacity = 1 - t;
-            } else {
-              opacity = 0;
-            }
-          }
-          
-          textEl.style.opacity = opacity;
-          if (opacity > 0.01) {
-            textEl.classList.add('visible');
-          } else {
-            textEl.classList.remove('visible');
-          }
-          
-          textEl.style.transform = 'translate(-50%, -50%)';
-        });
-        
-        // ----- RENDER PARALLAX -----
-        scenes.forEach((scene, idx) => {
-          const { ctx, canvas, layers } = scene;
-          if (!ctx || !canvas) return;
-          
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
+        return bestIdx;
+      }
+      
+      // text visibility and sticky-middle logic (0-15% fade-in, 15-25% hold, 25-75% sticky, 75-90% fadeout)
+      function updateTextOpacity() {
+        for (let idx = 0; idx < sections.length; idx++) {
           const section = sections[idx];
-          if (!section) return;
-          
-          const rect = section.getBoundingClientRect();
-          const sectionTop = rect.top + viewportTop;
-          const sectionHeight = rect.height;
-          
-          let progress = (viewportTop - sectionTop) / sectionHeight;
+          const sectionTop = section.offsetTop;
+          const sectionHeight = section.clientHeight;
+          let progress = (currentScroll - sectionTop) / sectionHeight;
           progress = Math.min(Math.max(progress, 0), 1);
           
-          const delta = progress - scene.smoothProgress;
-          const dynamicEase = 0.06;
-          scene.smoothProgress += delta * dynamicEase;
-          const smooth = Math.min(Math.max(scene.smoothProgress, 0), 1);
+          const textDiv = textElements[idx];
+          if (!textDiv) continue;
           
-          const strengthX = 55;
-          const strengthY = 16;
-          const scaleBoost = 0.0018;
+          // enhanced timing: 0%->18% fade in, 18%->28% fully visible, 28%->72% STICKY full, 72%->90% fade out
+          let opacity = 0;
+          const fadeInEnd = 0.18;
+          const preSticky = 0.28;    // full visible before sticky
+          const stickyStart = 0.28;
+          const stickyEnd = 0.72;
+          const fadeOutEnd = 0.88;
+          
+          if (progress < fadeInEnd) {
+            opacity = progress / fadeInEnd;
+          } else if (progress < preSticky) {
+            opacity = 1;
+          } else if (progress <= stickyEnd) {
+            opacity = 1;   // STICKY PERIOD
+          } else if (progress < fadeOutEnd) {
+            const t = (progress - stickyEnd) / (fadeOutEnd - stickyEnd);
+            opacity = 1 - t;
+          } else {
+            opacity = 0;
+          }
+          
+          opacity = Math.min(1, Math.max(0, opacity));
+          textDiv.style.opacity = opacity;
+          if (opacity > 0.02) textDiv.classList.add('visible');
+          else textDiv.classList.remove('visible');
+        }
+      }
+      
+      // update canvas layers opacity based on active scene with crossfade
+      let previousActive = -1;
+      function updateCanvasLayerVisibility() {
+        const newActive = getActiveSceneFromScroll();
+        if (newActive !== previousActive) {
+          canvasLayers.forEach((layer, idx) => {
+            if (idx === newActive) {
+              layer.style.opacity = '1';
+              layer.classList.add('active');
+            } else if (idx === previousActive) {
+              layer.style.opacity = '0';
+              // keep transition but allow removal after fade out
+              setTimeout(() => {
+                if (layer && layer.classList && layer.classList.contains('active') && idx !== newActive) {
+                  layer.classList.remove('active');
+                }
+              }, 900);
+            } else {
+              layer.style.opacity = '0';
+              if (layer.classList.contains('active')) layer.classList.remove('active');
+            }
+          });
+          previousActive = newActive;
+        }
+        return newActive;
+      }
+      
+      // RENDER PARALLAX with sticky middle (25%->75% STUCK, rest moves)
+      function renderParallax() {
+        updateTextOpacity();
+        const currentScene = updateCanvasLayerVisibility();
+        
+        for (let s = 0; s < scenesData.length; s++) {
+          const scene = scenesData[s];
+          const { ctx, canvas, layers } = scene;
+          if (!ctx || !canvas) continue;
+          
+          // get progress for this scene (0 to 1)
+          const sectionElem = sections[s];
+          if (!sectionElem) continue;
+          const sectionTop = sectionElem.offsetTop;
+          const sectionHeight = sectionElem.clientHeight;
+          let rawProgress = (currentScroll - sectionTop) / sectionHeight;
+          rawProgress = Math.min(Math.max(rawProgress, 0), 1);
+          
+          // MAP to parallax movement with STICKY CORE:
+          // 0% -> 25% : parallax factor moves from 1.0 (start) to 0.5 (center hold)
+          // 25% -> 75% : STICKY (factor = 0.5)
+          // 75% -> 100% : moves from 0.5 to 0.0 (end)
+          let parallaxFactor;
+          if (rawProgress <= 0.25) {
+            // start -> middle: 1.0 -> 0.5
+            const t = rawProgress / 0.25; // 0..1
+            parallaxFactor = 1.0 - t * 0.5;
+          } else if (rawProgress <= 0.75) {
+            // STICKY zone: factor stays at 0.5 (image locked)
+            parallaxFactor = 0.5;
+          } else {
+            // end zone: 0.5 -> 0.0
+            const t = (rawProgress - 0.75) / 0.25;
+            parallaxFactor = 0.5 - t * 0.5;
+          }
+          // clamp & smooth
+          parallaxFactor = Math.min(Math.max(parallaxFactor, 0), 1);
+          // apply smoothing for buttery movement
+          const delta = parallaxFactor - scene.smoothProgress;
+          scene.smoothProgress += delta * 0.07;
+          const smoothFactor = Math.min(Math.max(scene.smoothProgress, 0), 1);
+          
+          // clear canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // draw layers from back to front
+          const strengthX = 58;
+          const strengthY = 20;
+          const scaleBoost = 0.0012;
           
           for (let i = layers.length - 1; i >= 0; i--) {
             const layer = layers[i];
             const { img } = layer;
             if (!img || !img.complete) continue;
+            const depth = 1 - (i / layers.length);  // deeper layers move less
+            const fit = getCoverFit(img, canvas.width, canvas.height);
+            let { w, h, x, y } = fit;
             
-            const depth = 1 - (i / layers.length);
-            const { w, h, x, y } = getCover(img, canvas);
+            // parallax offset: uses smoothFactor: when smoothFactor = 1 => offset = 0 (fully right), when =0 => offset max left/up
+            const offsetX = (1 - smoothFactor) * -strengthX * depth * (0.8 + depth * 0.3);
+            const offsetY = (1 - smoothFactor) * -strengthY * depth;
+            const scaleVal = 1 + (1 - depth) * scaleBoost;
             
-            const dx = (1 - smooth) * -strengthX * depth * (0.7 + depth * 0.3);
-            const dy = (1 - smooth) * -strengthY * depth;
-            const scale = 1 + (1 - depth) * scaleBoost;
+            const finalW = w * scaleVal;
+            const finalH = h * scaleVal;
+            const finalX = x + offsetX - (finalW - w) / 2;
+            const finalY = y + offsetY - (finalH - h) / 2;
             
-            const sw = w * scale;
-            const sh = h * scale;
-            const sx = x + dx - (sw - w) / 2;
-            const sy = y + dy - (sh - h) / 2;
-            
-            if (depth > 0.4) {
-              const rotation = (1 - smooth) * 0.2 * (idx % 2 === 0 ? 0.6 : -0.6);
+            // subtle rotation for atmospheric effect on front layers
+            if (depth > 0.5) {
+              const rot = (1 - smoothFactor) * 0.018 * (s % 2 === 0 ? 0.8 : -0.8);
               ctx.save();
               ctx.translate(canvas.width / 2, canvas.height / 2);
-              ctx.rotate(rotation * depth * 0.01);
+              ctx.rotate(rot);
               ctx.translate(-canvas.width / 2, -canvas.height / 2);
-              ctx.drawImage(img, sx, sy, sw, sh);
+              ctx.drawImage(img, finalX, finalY, finalW, finalH);
               ctx.restore();
             } else {
-              ctx.drawImage(img, sx, sy, sw, sh);
+              ctx.drawImage(img, finalX, finalY, finalW, finalH);
             }
           }
           
-          const gradient = ctx.createRadialGradient(
-            canvas.width / 2, canvas.height / 2, 0,
-            canvas.width / 2, canvas.height / 2, canvas.width / 1.5
+          // Vignette + mood
+          const grad = ctx.createRadialGradient(
+            canvas.width / 2, canvas.height / 2, canvas.height * 0.1,
+            canvas.width / 2, canvas.height / 2, canvas.width / 1.3
           );
-          const vignetteStrength = 0.22 + (1 - smooth) * 0.1;
-          gradient.addColorStop(0, 'rgba(0,0,0,0)');
-          gradient.addColorStop(1, `rgba(0,0,0,${vignetteStrength})`);
-          ctx.fillStyle = gradient;
+          const vignOpacity = 0.24 + (1 - smoothFactor) * 0.09;
+          grad.addColorStop(0, 'rgba(0,0,0,0)');
+          grad.addColorStop(1, `rgba(0,0,0,${vignOpacity})`);
+          ctx.fillStyle = grad;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-        });
+        }
         
-        requestAnimationFrame(render);
+        requestAnimationFrame(renderParallax);
       }
-
-      loadAllScenes();
       
+      // initiate loading
+      loadAllScenes().catch(e => console.warn("load minor issue", e));
+      
+      // fix for orientation and avoid dead zones (ensure body height recalc after all assets)
       window.addEventListener('orientationchange', () => {
         setTimeout(() => {
-          scenes.forEach(scene => {
-            if (scene.resizeHandler) {
-              if (scene.canvas) {
-                scene.canvas.width = window.innerWidth;
-                scene.canvas.height = window.innerHeight;
-              }
+          updateBodyHeight();
+          for (let s of scenesData) {
+            if (s.resizeHandler && s.canvas) {
+              s.canvas.width = window.innerWidth;
+              s.canvas.height = window.innerHeight;
             }
-          });
-          setBodyHeight();
-          const maxScroll = document.body.scrollHeight - window.innerHeight;
-          target = window.scrollY;
-          current = Math.min(current, maxScroll);
+          }
+          const maxS = document.body.scrollHeight - window.innerHeight;
+          if (targetScroll > maxS) targetScroll = maxS;
+          if (currentScroll > maxS) currentScroll = maxS;
+          window.scrollTo(0, targetScroll);
+        }, 80);
+      });
+      
+      // resize observer to keep container height perfect
+      const resizeObserver = new ResizeObserver(() => {
+        updateBodyHeight();
+        const maxAllowed = Math.max(0, document.body.scrollHeight - window.innerHeight);
+        if (targetScroll > maxAllowed) targetScroll = maxAllowed;
+        if (currentScroll > maxAllowed) currentScroll = maxAllowed;
+      });
+      if (container) resizeObserver.observe(container);
+      
+      // extra insurance: after fonts / everything loaded
+      window.addEventListener('load', () => {
+        updateBodyHeight();
+        const finalMax = document.body.scrollHeight - window.innerHeight;
+        targetScroll = Math.min(window.scrollY, finalMax);
+        currentScroll = targetScroll;
+        window.scrollTo(0, targetScroll);
+        setTimeout(() => {
+          updateBodyHeight();
+          console.log("✅ FIXED: No trailing space, each section 500vh, total height = 20 viewports, sticky middle active");
         }, 100);
       });
-      
-      const observer = new ResizeObserver(() => {
-        setBodyHeight();
-      });
-      if (container) observer.observe(container);
-      
-      // Log for verification
-      setTimeout(() => {
-        console.log(`✅ Sections: scene0=250vh, scene1=250vh, scene2=250vh, scene3=180vh`);
-        console.log(`📐 Total scroll height: ${document.body.scrollHeight}px`);
-        console.log(`✨ Last scene text fades by 70% of its 180vh section → no trailing void`);
-      }, 500);
     })();
   </script>
 </body>
